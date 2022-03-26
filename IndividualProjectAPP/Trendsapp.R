@@ -8,51 +8,44 @@ library(tidyverse)
 library(tidyquant)
 library(shinyWidgets)
 library(dashboardthemes)
-
-# Configuring settings as per tidyquant tutorial
-options("getSymbols.warning4.0"=FALSE)
-options("getSymbols.yahoo.warning"=FALSE)
+library(fpp3)
+library(ggthemes)
 
 
+# Path where data is
+file_path <- "~/BAS 475 Spring T TH/multiTimeline3.0.csv"
 
-# Define function to split names on dot and only keep after dot text
-clean_names <- function(stocks) {
-  split_names = strsplit(names(stocks), split = '.', fixed = TRUE)
-  vapply(split_names, function(x) x[2], character(1))
-}
-
-
-# Getting stock symbols and creating date range
-stockNames <- stockSymbols()[,1:2]
-start <- as.Date("2010-01-01")
-end <- Sys.Date()
+# Data starts in 3rd row, skip first 2 rows
+g_trends <- read.csv(file_path, skip = 2)
+# Rename columns
+names(g_trends) <- c("Month", "Interest")
+# Convert Month to date
+g_trends$Month <- ymd(g_trends$Month)
+# Convert to tsibble
+g_trends <- tsibble(g_trends)
 
 ui <- dashboardPage( skin = "yellow", 
                      
-                     dashboardHeader( title = "Stock Analysis"),
+                     dashboardHeader( title = "Interest in \"Wildfires\"", titleWidth = 500),
                      
-                     dashboardSidebar(
+                     dashboardSidebar(width = 300,
                        
                        
                        # Making menu tabs
-                       sidebarMenu( id = "tabs",
-                                    menuItem("Plots", tabName = "tab1", icon = icon("fas fa-chart-bar")),
-                                    menuItem("Ticker Lookup", tabName = "tab2", icon = icon("info-circle")),
+                       sidebarMenu( #id = "tabs",
+                                    menuItem("Introduction", tabName = "intro", icon = icon("info-circle")),
+                                    menuItem("Full-Time Series", tabName = "tab2", icon = icon("fas fa-chart-bar")),
+                                    menuItem("Plot Choice", tabName = "tab3", icon = icon("fas fa-chart-bar")),
+                                    menuItem("My Feature", tabName = "tab4", icon = icon("fa-light fa-block-question")), 
+
                                     
-                                    
-                                    # User Will choose stock Here
-                                    selectizeInput("chooseStock", choices = NULL, label = h3("Choose a stock")),
-                                    
-                                    # User can choose date range for stock
+                                    # User can choose date range for the graphic
                                     dateRangeInput(
                                       "chooseDate",
                                       label = h3("Choose a Date")
-                                      
-                                      
-                                    ))
-                       
-                       
-                     ),
+                                    )
+                                  )
+                                ),
                      
                      dashboardBody(
                        shinyDashboardThemes( theme = "grey_dark" ),
@@ -60,87 +53,166 @@ ui <- dashboardPage( skin = "yellow",
                        
                        # Setting content for tabs
                        tabItems(
-                         tabItem("tab1", 
-                                 # While plot is being created a loading screen spinner will appear
-                                 withSpinner(
-                                   plotlyOutput("plot")
+                         tabItem(tabName = "intro", 
+                                 #Displays an introduction/instructions on how to use the app
+                                 h1("Introduction"), 
+                                 
+                                 hr(),
+                                 
+                                 tags$div(
+                                   tags$h3("This application analyzes the interest in 
+                                      \"Wildfires\" from data collected by 
+                                      GoogleTrends."),
+                                   
+                                   tags$head(tags$style('h3 {color:#FF8200;}')),
+                                   
+                                   tags$br(),
+                                   
+                                   tags$h3("The second tab displays the Full-Time Series graphic for the interest in \"Wildfires\" from _____ 20__ to ___ 20__."),
+                                   
+                                   tags$br(),
+                                   
+                                   tags$h3("The third tab displays your choice in one of three types of graphics: (1) seasonality, (2) autocorrelation, and (3) decomposition. "),
+                                   
+                                   tags$br(),
+                                   
+                                   tags$h3("The fourth tab displays _______."),
+                                   
+                                   tags$br(),
+                                 ),
+                         
+                         #Displays a plot of the full-time series
+                         tabItem(tabName = "tab2", 
+                                 h1("Full-Time Series Graph"),
+                                 
+                                 hr(),
+                                 
+                                 basicPage(
+                                   plotlyOutput("fulltimeseries")
                                  ),
                                  
-                                 withSpinner(
-                                   plotlyOutput("candleStick")
-                                 )),
-                         
-                         tabItem("tab2", 
+                                 hr(),
                                  
-                                 dataTableOutput("lookup")
-                         )
+                                 h3("Interpretation"),
+                                 
+                                 h4("The full-time series shows a trend that was 
+                                relatively increasing from 20__-20__.The trend
+                                then appears to be decreasing from about
+                                20__-20__. The trend then appears to increase 
+                                from 20__-20__. There appears to be strong
+                                seasonality throughtout the plot. This is 
+                                likely due to ______ season.")
+                                 
+                         ),   
+                                 
+                        #Displays another plot of the user's choosing
+                         tabItem(tabName = "tab3", 
+                                 h1("Graphic of Your Choice"), 
+                                 
+                                 hr(),
+                                 
+                                 radioButtons("plot_type", 
+                                              label = h2("Which plot do you want to see?"),
+                                              choices = c("Seasonality", 
+                                                          "Autocorrelation", 
+                                                          "Decomposition")),
+                                 
+                                 hr(),
+                                 
+                                 plotOutput("myplot"),
+                                 
+                                 hr(),
+                                 
+                                 h3("Interpretation"),
+                                 
+                                 textOutput("myplotint")
+                                
+                         ), 
                          
-                         
-                       ) 
-                       
+                        #Displays another plot of the user's choosing
+                        tabItem(tabName = "tab4", 
+                                h1("My Feature"),
+                       )
                      )
-)
+                  )
+                )
+              )
 
-tabnames <- c("tab1, tab2")
+# tabnames <- c("intro, tab2, tab3, tab4") 
 
 server <- function(input, output, session) {
-  
-  #Keeps track of tabs
-  active <- reactiveValues(tab = 1)
-  
-  # Updates stock choices and date selections in server
-  updateSelectizeInput(session, "chooseStock", choices = stockNames$Symbol, selected = stockNames$Symbol[1], server = T)
-  updateDateRangeInput(session, "chooseDate",  start = start, end = Sys.Date(), min = start, max = Sys.Date())
-  
-  
-  # Creating variable for stock information. The '<<-' is to make the variable global
-  chosenStock <- reactive( {
-    stockInfo <<- getSymbols(input$chooseStock, src = "yahoo", from = input$chooseDate[1], to = input$chooseDate[2], 
-                             auto.assign = FALSE)
-    names(stockInfo) <<- clean_names(stockInfo)
-    stockInfo
-    
+  #fulltimeseries
+  output$fulltimeseries <- renderPlotly({
+    p <- ggplot(g_trends, aes(Month, Interest)) + 
+      geom_line(color = "red") + 
+      theme_fivethirtyeight()+
+      labs(title = "The Interest of \"Wildfires\"", y = "Interest") +
+      ggeasy::easy_center_title() +
+      ggeasy::easy_all_text_color(color = "#ff8200") +
+      theme(plot.background = element_rect(fill = "grey"), 
+            panel.background = element_rect(fill = "grey"))
+    ggplotly(p)
   })
   
-  # Creating interactive plot for stock at specified range
-  output$plot <- renderPlotly ({
-    req(input$chooseStock)
-    P1 <-  chosenStock() %>%
-      ggplot(aes(x = index(stockInfo), y = stockInfo[,4], 
-                 text = paste("Date: ", date(stockInfo),
-                              "<br>Stock Price: $", stockInfo[,4]),
-                 group = "Date")) +
-      geom_line(color = "orange") + 
-      labs( title =  paste("Closing Price for", input$chooseStock),
-            y = "Stock Price",
-            x = "")
-    
-    ggplotly(P1, tooltip = "text")
-    
+  #graph of choices
+  output$myplot <- renderPlotly({
+    if (input$plot_type == "Seasonality") {
+      g_trends %>% gg_season(Interest)+
+        theme_fivethirtyeight()+
+        labs(title = "The Interest of \"Wildfires\"", y = "Interest") +
+        ggeasy::easy_center_title() +
+        ggeasy::easy_all_text_color(color = "#ff8200") +
+        theme(plot.background = element_rect(fill = "white"), 
+              panel.background = element_rect(fill = "white"))
+    } 
+    else if (input$plot_type == "Autocorrelation") {
+      g_trends %>% ACF() %>% 
+        autoplot()+
+        labs(title = "Interest of Wildfires")+
+        ggeasy::easy_center_title()+
+        ggeasy::easy_all_text_colour(colour = "#FF8200")+
+        theme(plot.background = element_rect(fill = "white"), 
+              panel.background = element_rect(fill = "white"))
+    }
+    else if (input$plot_type == "Decomposition") {
+      x11_dcmp <- g_trends %>%
+        model(x11 = X_13ARIMA_SEATS(Interest ~ x11())) %>%
+        components()
+      autoplot(x11_dcmp) +
+        labs(title = "Decomposition of Interest of \"Wildfires\" using X-11.")+
+        ggeasy::easy_center_title()+
+        ggeasy::easy_all_text_colour(colour = "#FF8200")+
+        theme(plot.background = element_rect(fill = "white"), 
+              panel.background = element_rect(fill = "white"))
+    }
   })
-  
-  output$candleStick <- renderPlotly({
-    req(input$chooseStock)
     
-    
-    dat <- as.data.frame(stockInfo)
-    dat$date <- index(stockInfo)
-    dat <- subset(dat, date >= "2016-01-01")
-    
-    fig <- plot_ly(dat, x = ~date, xend = ~date, color = ~Close > Open,
-                   colors = c("red", "forestgreen"), hoverinfo = "none") 
-    fig <- fig %>% add_segments(y = ~Low, yend = ~High, size = I(1)) 
-    fig <- fig %>% add_segments(y = ~Open, yend = ~Close, size = I(3)) 
-    fig <- fig %>% layout(showlegend = FALSE, yaxis = list(title = "Price")) 
-    fig <- fig %>% rangeslider()
-    fig
+ #interpretation of graph of choice
+  output$myplotint <- renderText({
+    if (input$plot_type == "Seasonality") {
+      noquote(paste(c("The seasonality plot shows that the interest 
+      in \"Wildfires\" peaks from ___until ____ and 
+      again from ___ to ____. This makes logical sense 
+      because this coincides with ___ season. Also of note is 
+      that ___ is particularly high for most of the summer months.
+      This is likely due to the conclusion of _____ season. The
+      highest amount of interest seems to coincide with Wildfires in ____ and 
+      _____. ", 
+                      collapse = " ")))
+    } 
+    else if (input$plot_type == "Autocorrelation") {
+      noquote(paste(c("The autocorrelation plot shows that the 
+      interest in \"Wildfires\" is extremely seasonal. This
+      is likely due to _____ season and _____ season. 
+      This is especially the case for seasons that wildfires seem
+      be excessive.", collapse = " ")))
+    }
+    else if (input$plot_type == "Decomposition") {
+      noquote(paste(c("The X11 decomposition plot shows that the trend
+      peaked in about ______. The plot also shows a consistent amount
+      of seasonality.", collapse = " ")))
+    }
   })
-  
-  #Shows stock ticker and name for reference
-  output$lookup <- renderDataTable({
-    stockNames
-  })
-  
 }
 
 shinyApp(ui, server)
