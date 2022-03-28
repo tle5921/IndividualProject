@@ -93,12 +93,9 @@ ui <- dashboardPage( skin = "yellow",
                                  h3("Interpretation"),
                                  
                                  h4("The full-time series shows a trend that was 
-                                relatively increasing from 20__-20__.The trend
-                                then appears to be decreasing from about
-                                20__-20__. The trend then appears to increase 
-                                from 20__-20__. There appears to be strong
+                                relatively slow increases from 2017-2022.There appears to be strong
                                 seasonality throughtout the plot. This is 
-                                likely due to ______ season.")
+                                likely due to summer and fall season, transition.")
                                  
                          ),   
                                  
@@ -163,7 +160,7 @@ server <- function(input, output, session) {
               panel.background = element_rect(fill = "white"))
     } 
     else if (input$plot_type == "Autocorrelation") {
-      g_trends %>% ACF(Interest, lag_max = 40)+
+      g_trends %>% ACF(Interest, lag_max = 70)+  
       theme_fivethirtyeight()+
         labs(title = "Interest of Wildfires")+
         ggeasy::easy_center_title()+
@@ -189,25 +186,22 @@ server <- function(input, output, session) {
   output$myplotint <- renderText({
     if (input$plot_type == "Seasonality") {
       noquote(paste(c("The seasonality plot shows that the interest 
-      in \"Wildfires\" peaks from ___until ____ and 
-      again from ___ to ____. This makes logical sense 
-      because this coincides with ___ season. Also of note is 
-      that ___ is particularly high for most of the summer months.
-      This is likely due to the conclusion of _____ season. The
-      highest amount of interest seems to coincide with Wildfires in ____ and 
-      _____. ", 
+      in \"Wildfires\" peaks from AUGUST until SEPTEMBER. This makes logical sense 
+      because this coincides with SUMMER season transition into FALL season. The
+      highest amount of interest seems to coincide with Wildfires in AUGUST and 
+      SEPTEMBER ", 
                       collapse = " ")))
     } 
     else if (input$plot_type == "Autocorrelation") {
       noquote(paste(c("The autocorrelation plot shows that the 
-      interest in \"Wildfires\" is extremely seasonal. This
-      is likely due to _____ season and _____ season. 
+      interest in \"Wildfires\" is semi seasonal. This
+      is likely due to summer season and transition into fall season, where winds likely picked up more wildfires. 
       This is especially the case for seasons that wildfires seem
       be excessive.", collapse = " ")))
     }
     else if (input$plot_type == "Decomposition") {
-      noquote(paste(c("The X11 decomposition plot shows that the trend
-      peaked in about ______. The plot also shows a consistent amount
+      noquote(paste(c("The STL decomposition plot shows that the trend
+      peaked in about 2020. The plot also shows a consistent amount
       of seasonality.", collapse = " ")))
     }
   })
