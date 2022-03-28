@@ -36,14 +36,7 @@ ui <- dashboardPage( skin = "yellow",
                                     menuItem("Introduction", tabName = "intro", icon = icon("info-circle")),
                                     menuItem("Full-Time Series", tabName = "tab2", icon = icon("fas fa-chart-bar")),
                                     menuItem("Plot Choice", tabName = "tab3", icon = icon("fas fa-chart-bar")),
-                                    menuItem("My Feature", tabName = "tab4", icon = icon("fa-light fa-block-question")), 
-
-                                    
-                                    # User can choose date range for the graphic
-                                    dateRangeInput(
-                                      "chooseDate",
-                                      label = h3("Choose a Date")
-                                    )
+                                    menuItem("My Feature", tabName = "tab4", icon = icon("alien"))
                                   )
                                 ),
                      
@@ -53,7 +46,9 @@ ui <- dashboardPage( skin = "yellow",
                        
                        # Setting content for tabs
                        tabItems(
+                         
                          tabItem(tabName = "intro", 
+                                 
                                  #Displays an introduction/instructions on how to use the app
                                  h1("Introduction"), 
                                  
@@ -68,7 +63,7 @@ ui <- dashboardPage( skin = "yellow",
                                    
                                    tags$br(),
                                    
-                                   tags$h3("The second tab displays the Full-Time Series graphic for the interest in \"Wildfires\" from _____ 20__ to ___ 20__."),
+                                   tags$h3("The second tab displays the Full-Time Series graphic for the interest in \"Wildfires\" from March 2017 to March 2022."),
                                    
                                    tags$br(),
                                    
@@ -80,6 +75,8 @@ ui <- dashboardPage( skin = "yellow",
                                    
                                    tags$br(),
                                  ),
+                                ),
+                         
                          
                          #Displays a plot of the full-time series
                          tabItem(tabName = "tab2", 
@@ -136,9 +133,9 @@ ui <- dashboardPage( skin = "yellow",
                      )
                   )
                 )
-              )
+              
 
-# tabnames <- c("intro, tab2, tab3, tab4") 
+tabnames <- c("intro, tab2, tab3, tab4") 
 
 server <- function(input, output, session) {
   #fulltimeseries
