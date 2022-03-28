@@ -34,9 +34,9 @@ ui <- dashboardPage( skin = "yellow",
                        # Making menu tabs
                        sidebarMenu( #id = "tabs",
                                     menuItem("Introduction", tabName = "intro", icon = icon("info-circle")),
-                                    menuItem("Full-Time Series", tabName = "tab2", icon = icon("fas fa-chart-bar")),
+                                    menuItem("Full-Time Series", tabName = "tab2", icon = icon("fa-solid fa-chart-line")),
                                     menuItem("Plot Choice", tabName = "tab3", icon = icon("fas fa-chart-bar")),
-                                    menuItem("My Feature", tabName = "tab4", icon = icon("alien"))
+                                    menuItem("My Feature", tabName = "tab4", icon = icon("expand"))
                                   )
                                 ),
                      
@@ -116,7 +116,7 @@ ui <- dashboardPage( skin = "yellow",
                                  
                                  hr(),
                                  
-                                 plotOutput("myplot"),
+                                 plotlyOutput("myplot"),
                                  
                                  hr(),
                                  
@@ -163,8 +163,8 @@ server <- function(input, output, session) {
               panel.background = element_rect(fill = "white"))
     } 
     else if (input$plot_type == "Autocorrelation") {
-      g_trends %>% ACF() %>% 
-        autoplot()+
+      g_trends %>% ACF(Interest, lag_max = 49)+
+      theme_fivethirtyeight()+
         labs(title = "Interest of Wildfires")+
         ggeasy::easy_center_title()+
         ggeasy::easy_all_text_colour(colour = "#FF8200")+
@@ -172,11 +172,11 @@ server <- function(input, output, session) {
               panel.background = element_rect(fill = "white"))
     }
     else if (input$plot_type == "Decomposition") {
-      x11_dcmp <- g_trends %>%
-        model(x11 = X_13ARIMA_SEATS(Interest ~ x11())) %>%
-        components()
-      autoplot(x11_dcmp) +
-        labs(title = "Decomposition of Interest of \"Wildfires\" using X-11.")+
+      dcmp <- g_trends %>%
+        model(classical_decomposition(Interest, type = "additive")) %>%
+        components(dcmp)+
+      theme_fivethirtyeight()+
+        labs(title = "Decomposition of Interest of \"Wildfires\" using Classical Decomposition.")+
         ggeasy::easy_center_title()+
         ggeasy::easy_all_text_colour(colour = "#FF8200")+
         theme(plot.background = element_rect(fill = "white"), 
