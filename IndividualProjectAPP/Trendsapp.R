@@ -163,7 +163,7 @@ server <- function(input, output, session) {
               panel.background = element_rect(fill = "white"))
     } 
     else if (input$plot_type == "Autocorrelation") {
-      g_trends %>% ACF(Interest, lag_max = 49)+
+      g_trends %>% ACF(Interest, lag_max = 40)+
       theme_fivethirtyeight()+
         labs(title = "Interest of Wildfires")+
         ggeasy::easy_center_title()+
@@ -173,10 +173,11 @@ server <- function(input, output, session) {
     }
     else if (input$plot_type == "Decomposition") {
       dcmp <- g_trends %>%
-        model(classical_decomposition(Interest, type = "additive")) %>%
-        components(dcmp)+
+        model(STL(Interest ~ trend(window = 7) + season(window = "periodic"), robust = TRUE)) %>%
+        components() %>%
+        autoplot()+
       theme_fivethirtyeight()+
-        labs(title = "Decomposition of Interest of \"Wildfires\" using Classical Decomposition.")+
+        labs(title = "STL Decomposition of Interest of \"Wildfires\"")+
         ggeasy::easy_center_title()+
         ggeasy::easy_all_text_colour(colour = "#FF8200")+
         theme(plot.background = element_rect(fill = "white"), 
