@@ -29,16 +29,16 @@ ui <- dashboardPage( skin = "yellow",
                      dashboardHeader( title = "Interest in \"Wildfires\"", titleWidth = 500),
                      
                      dashboardSidebar(width = 300,
-                       
-                       
-                       # Making menu tabs
-                       sidebarMenu( #id = "tabs",
-                                    menuItem("Introduction", tabName = "intro", icon = icon("info-circle")),
-                                    menuItem("Full-Time Series", tabName = "tab2", icon = icon("fa-solid fa-chart-line")),
-                                    menuItem("Plot Choice", tabName = "tab3", icon = icon("fas fa-chart-bar")),
-                                    menuItem("My Feature", tabName = "tab4", icon = icon("expand"))
-                                  )
-                                ),
+                                      
+                                      
+                                      # Making menu tabs
+                                      sidebarMenu( #id = "tabs",
+                                        menuItem("Introduction", tabName = "intro", icon = icon("info-circle")),
+                                        menuItem("Full-Time Series", tabName = "tab2", icon = icon("fa-solid fa-chart-line")),
+                                        menuItem("Plot Choice", tabName = "tab3", icon = icon("fas fa-chart-bar")),
+                                        menuItem("My Feature", tabName = "tab4", icon = icon("expand"))
+                                      )
+                     ),
                      
                      dashboardBody(
                        shinyDashboardThemes( theme = "grey_dark" ),
@@ -75,7 +75,7 @@ ui <- dashboardPage( skin = "yellow",
                                    
                                    tags$br(),
                                  ),
-                                ),
+                         ),
                          
                          
                          #Displays a plot of the full-time series
@@ -98,8 +98,8 @@ ui <- dashboardPage( skin = "yellow",
                                 likely due to summer and fall season, transition.")
                                  
                          ),   
-                                 
-                        #Displays another plot of the user's choosing
+                         
+                         #Displays another plot of the user's choosing
                          tabItem(tabName = "tab3", 
                                  h1("Graphic of Your Choice"), 
                                  
@@ -120,17 +120,32 @@ ui <- dashboardPage( skin = "yellow",
                                  h3("Interpretation"),
                                  
                                  textOutput("myplotint")
-                                
+                                 
                          ), 
                          
-                        #Displays another plot of the user's choosing
-                        tabItem(tabName = "tab4", 
-                                h1("My Feature"),
+                         #Displays another plot of the user's choosing
+                         tabItem(tabName = "tab4", 
+                                 h1("My Feature"),
+                             
+                                 
+                                 hr(),
+                                 
+                                 radioButtons("Newplot_type", 
+                                              label = h2("Which new plot do you want to see?"),
+                                              choices = c("Classical Decomposition", 
+                                                          "Transforming", 
+                                                          "Forecast")),
+                                 
+                                 hr(),
+                                 
+                                 plotlyOutput("mynewplot"),
+                                 
+                                 hr()
+                         )
                        )
                      )
-                  )
-                )
-              
+)
+
 
 tabnames <- c("intro, tab2, tab3, tab4") 
 
@@ -161,7 +176,7 @@ server <- function(input, output, session) {
     } 
     else if (input$plot_type == "Autocorrelation") {
       g_trends %>% ACF(Interest, lag_max = 70)+  
-      theme_fivethirtyeight()+
+        theme_fivethirtyeight()+
         labs(title = "Interest of Wildfires")+
         ggeasy::easy_center_title()+
         ggeasy::easy_all_text_colour(colour = "#FF8200")+
@@ -173,7 +188,7 @@ server <- function(input, output, session) {
         model(STL(Interest ~ trend(window = 7) + season(window = "periodic"), robust = TRUE)) %>%
         components() %>%
         autoplot()+
-      theme_fivethirtyeight()+
+        theme_fivethirtyeight()+
         labs(title = "STL Decomposition of Interest of \"Wildfires\"")+
         ggeasy::easy_center_title()+
         ggeasy::easy_all_text_colour(colour = "#FF8200")+
@@ -181,8 +196,8 @@ server <- function(input, output, session) {
               panel.background = element_rect(fill = "white"))
     }
   })
-    
- #interpretation of graph of choice
+  
+  #interpretation of graph of choice
   output$myplotint <- renderText({
     if (input$plot_type == "Seasonality") {
       noquote(paste(c("The seasonality plot shows that the interest 
@@ -205,6 +220,22 @@ server <- function(input, output, session) {
       of seasonality.", collapse = " ")))
     }
   })
+  
+  
+  #newPlots
+  output$mynewplot <- renderPlotly({
+    if (input$Newplot_type == "Classical Decomposition") {
+      g_trends %>% model(
+        classical_decomposition(Interest, type = "multiplicative")
+      ) 
+    } else if (input$plot_type == "Transforming") {
+      g_trends %>% features(g_trends$Interest , features = guerrero) %>%
+        pull(lambda_guerrero) -> lambda 
+      DATA %>% (box_cox(Interest, lambda)) 
+    }
+  
+})
 }
 
 shinyApp(ui, server)
+
